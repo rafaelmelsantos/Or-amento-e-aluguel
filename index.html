@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orçamento de Aluguel</title>
+    <style>
+     
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .resultado { border: 1px solid #ccc; padding: 15px; margin-top: 20px; }
+        .oculto { display: none; }
+    </style>
+</head>
+<body>
+    <h1> SISTEMA DE ORÇAMENTO DE ALUGUEL - IMOBILIÁRIA R.M</h1>
+    
+    <form id="orcamentoForm">
+        <label for="tipoImovel">Informe o tipo de imóvel:</label>
+        <select id="tipoImovel" required onchange="atualizaCampos()">
+            <option value="">Selecione...</option>
+            <option value="apartamento">Apartamento</option>
+            <option value="casa">Casa</option>
+            <option value="estudio">Estúdio</option>
+        </select>
+        <br><br>
+
+        <div id="camposPadrao" class="oculto">
+            <label for="quartos">Quantos quartos?</label>
+            <select id="quartos">
+                <option value="1">1</option>
+                <option value="2">2</option>
+            </select>
+            <br><br>
+
+            <label>Deseja incluir garagem?</label>
+            <input type="radio" id="garagemSim" name="garagem" value="s"> <label for="garagemSim">Sim</label>
+            <input type="radio" id="garagemNao" name="garagem" value="n" checked> <label for="garagemNao">Não</label>
+            <br><br>
+        </div>
+
+        <div id="camposEstudio" class="oculto">
+            <label>Adicionar 2 vagas de estacionamento (R$250,00)?</label>
+            <input type="radio" id="vagasEstudioSim" name="vagasEstudio" value="s" onclick="toggleVagasExtra(true)"> <label for="vagasEstudioSim">Sim</label>
+            <input type="radio" id="vagasEstudioNao" name="vagasEstudio" value="n" checked onclick="toggleVagasExtra(false)"> <label for="vagasEstudioNao">Não</label>
+            <br><br>
+            
+            <div id="vagasExtraDiv" class="oculto">
+                <label for="vagasExtra">Deseja adicionar mais vagas? Informe quantas (0 se nenhuma):</label>
+                <input type="number" id="vagasExtra" min="0" value="0">
+                <br><br>
+            </div>
+        </div>
+
+        <div id="campoCriancas" class="oculto">
+            <label>Possui crianças?</label>
+            <input type="radio" id="criancasSim" name="criancas" value="s"> <label for="criancasSim">Sim</label>
+            <input type="radio" id="criancasNao" name="criancas" value="n" checked> <label for="criancasNao">Não</label>
+            <br><br>
+        </div>
+
+        <button type="submit">Gerar Orçamento</button>
+        <button type="button" id="downloadCsvBtn" class="oculto">Download CSV</button>
+    </form>
+
+    <div id="resultado" class="resultado oculto">
+        <h2> ORÇAMENTO GERADO</h2>
+        <p id="tipoResultado"></p>
+        <p id="quartosResultado" class="oculto"></p>
+        <p id="aluguelResultado"></p>
+        <p id="contratoResultado"></p>
+        <p id="descontoResultado" class="oculto"></p>
+    </div>
+
+    <script>
+        
+function atualizaCampos() {
+    const tipo = document.getElementById('tipoImovel').value;
+    const padrao = document.getElementById('camposPadrao');
+    const estudio = document.getElementById('camposEstudio');
+    const criancas = document.getElementById('campoCriancas');
+
+    padrao.classList.add('oculto');
+    estudio.classList.add('oculto');
+    criancas.classList.add('oculto');
+
+ 
+    if (tipo === 'apartamento' || tipo === 'casa') {
+        padrao.classList.remove('oculto');
+        if (tipo === 'apartamento') {
+            criancas.classList.remove('oculto');
+        }
+    } else if (tipo === 'estudio') {
+        estudio.classList.remove('oculto');
+        toggleVagasExtra(document.getElementById('vagasEstudioSim').checked);
+    }
+}
+
+
+function toggleVagasExtra(mostrar) {
+    const vagasExtraDiv = document.getElementById('vagasExtraDiv');
+    if (mostrar) {
+        vagasExtraDiv.classList.remove('oculto');
+    } else {
+        vagasExtraDiv.classList.add('oculto');
+        document.getElementById('vagasExtra').value = 0; 
+    }
+}
+
+
+document.getElementById('orcamentoForm').addEventListener('submit', function(event) {
+    event.preventDefault(); 
+
+    const tipo = document.getElementById('tipoImovel').value;
+    let valorBase = 0;
+    let quartos = 0;
+    let desconto = 0;
+
+   
+    if (tipo === 'apartamento') {
+        valorBase = 700;
+    } else if (tipo === 'casa') {
+        valorBase = 900;
+    } else if (tipo === 'estudio') {
+        valorBase = 1200;
+    } else {
+        alert("Tipo inválido! Por favor, selecione um tipo de imóvel.");
+        return;
+    }
+
+  
+    if (tipo === 'apartamento' || tipo === 'casa') {
+        quartos = parseInt(document.getElementById('quartos').value);
+        
+        if (tipo === 'apartamento' && quartos === 2) {
+            valorBase += 200;
+        } else if (tipo === 'casa' && quartos === 2) {
+            valorBase += 250;
+        }
+
+        const garagem = document.querySelector('input[name="garagem"]:checked').value;
+        if (garagem === 's') {
+            valorBase += 300;
+        }
+    } 
+    
+    
+    else if (tipo === 'estudio') {
+        const vagasIniciais = document.querySelector('input[name="vagasEstudio"]:checked').value;
+        if (vagasIniciais === 's') {
+            valorBase += 250;
+            const vagasExtra = parseInt(document.getElementById('vagasExtra').value);
+            valorBase += vagasExtra * 60;
+        }
+    }
+
+   
+    if (tipo === 'apartamento') {
+        const criancas = document.querySelector('input[name="criancas"]:checked').value;
+        if (criancas === 'n') {
+            desconto = valorBase * 0.05;
+            valorBase -= desconto;
+        }
+    }
+
+  
+    const valorContrato = 2000;
+    const parcelasContrato = 5;
+    const valorParcelaContrato = valorContrato / parcelasContrato;
+
+    
+    document.getElementById('tipoResultado').textContent = `Tipo de imóvel: ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
+    document.getElementById('aluguelResultado').textContent = `Valor mensal do aluguel: R$ ${valorBase.toFixed(2)}`;
+    document.getElementById('contratoResultado').textContent = `Valor total do contrato: R$ ${valorContrato.toFixed(2)} (em ${parcelasContrato}x de R$ ${valorParcelaContrato.toFixed(2)})`;
+    
+  
+    const quartosRes = document.getElementById('quartosResultado');
+    const descontoRes = document.getElementById('descontoResultado');
+    
+    if (tipo === 'apartamento' || tipo === 'casa') {
+        quartosRes.textContent = `Quartos: ${quartos}`;
+        quartosRes.classList.remove('oculto');
+    } else {
+        quartosRes.classList.add('oculto');
+    }
+
+    if (desconto > 0) {
+        descontoRes.textContent = `Desconto aplicado: R$ ${desconto.toFixed(2)}`;
+        descontoRes.classList.remove('oculto');
+    } else {
+        descontoRes.classList.add('oculto');
+    }
+
+    document.getElementById('resultado').classList.remove('oculto');
+    document.getElementById('downloadCsvBtn').classList.remove('oculto');
+
+    
+    window.aluguelMensal = valorBase; 
+});
+
+document.getElementById('downloadCsvBtn').addEventListener('click', function() {
+    const valorBase = window.aluguelMensal || 0;
+    
+    
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Mes,Valor do Aluguel (R$)\n";
+
+    for (let i = 1; i <= 12; i++) {
+     
+        const linha = `Mes ${i},R$ ${valorBase.toFixed(2).replace('.', ',')}`;
+        csvContent += linha + "\n";
+    }
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "orcamento.csv");
+    document.body.appendChild(link); 
+    link.click();
+    document.body.removeChild(link);
+    
+    alert("Arquivo 'orcamento.csv' gerado com sucesso!");
+});
+
+document.addEventListener('DOMContentLoaded', atualizaCampos);
+
+    </script>
+</body>
+</html>
